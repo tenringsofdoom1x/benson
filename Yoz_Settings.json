@@ -1,0 +1,8 @@
+{
+  "HitboxExpander": false,
+  "AutoArrest": false,
+  "ShowTargetESP": true,
+  "UIScale": 1.0,
+  "HitboxSize": 15,
+  "TargetColor": [255, 0, 0]
+}
