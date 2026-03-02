@@ -4,5 +4,5 @@
 well you heard the ## yoz's depth-in scripts markdown! heres the main wip loader
 
 ```luau
-loadstring(game:HttpGet("theresnothinghere.com/itsstillwip,true()()
+loadstring(game:HttpGet("https://raw.githubusercontent.com", true))()
 ```
