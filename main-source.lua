@@ -11,30 +11,140 @@
 
 local Players = game:GetService("Players");
 local RunService = game:GetService("RunService");
-local HttpService = game:GetService("HttpService");
-local CoreGui = game:GetService("CoreGui");
 local Workspace = game:GetService("Workspace");
+local Camera = Workspace.CurrentCamera;
 local player = Players.LocalPlayer;
-local char = player.Character or player.CharacterAdded:Wait();
+local mouse = player:GetMouse();
 local configName = "Yoz_Settings.json";
 local githubUrl = "https://raw.githubusercontent.com/tenringsofdoom1x/benson/main/Yoz_Settings.json";
-local function fetchConfig()
-	local s, c = pcall(function()
-		return game:HttpGet(githubUrl);
+local function isAngerTarget(v)
+	if (v.Character and v.Character:FindFirstChild("Head")) then
+		for _, child in pairs(v.Character.Head:GetChildren()) do
+			if (child:IsA("Decal") or child:IsA("Texture") or child.Name:lower():find("anger") or child.Name:lower():find("angry")) then
+				return true;
+			end
+		end
+	end
+	return false;
+end
+local manualTarget = nil;
+local function getBestTarget()
+	if (manualTarget and manualTarget.Character and manualTarget.Character:FindFirstChild("Head")) then
+		return manualTarget;
+	end
+	local target = nil;
+	local dist = math.huge;
+	local enemies = ((player.Team.Name == "Guards") and {"Criminals","Inmates"}) or {"Guards"};
+	for _, v in pairs(Players:GetPlayers()) do
+		if ((v ~= player) and v.Character and v.Character:FindFirstChild("HumanoidRootPart")) then
+			if table.find(enemies, v.Team.Name) then
+				if (Toggles.AutoTargetAnger and Toggles.AutoTargetAnger.Value and isAngerTarget(v)) then
+					return v;
+				end
+				local pos, vis = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position);
+				if vis then
+					local mag = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(pos.X, pos.Y)).Magnitude;
+					if ((mag < dist) and (mag < Options.SilentAimFOV.Value)) then
+						target = v;
+						dist = mag;
+					end
+				end
+			end
+		end
+	end
+	return target;
+end
+local function createESP(v)
+	local tracer = Drawing.new("Line");
+	tracer.Visible = false;
+	tracer.Thickness = 0.5;
+	RunService.RenderStepped:Connect(function()
+		if (v.Character and v.Character:FindFirstChild("HumanoidRootPart") and Toggles.MasterESP.Value) then
+			local hrp = v.Character.HumanoidRootPart;
+			local pos, vis = Camera:WorldToViewportPoint(hrp.Position);
+			if vis then
+				tracer.Color = (isAngerTarget(v) and Color3.new(1, 0, 0)) or Color3.new(1, 1, 1);
+				tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y);
+				tracer.To = Vector2.new(pos.X, pos.Y);
+				tracer.Visible = Toggles.ESPTracers.Value;
+			else
+				tracer.Visible = false;
+			end
+		else
+			tracer.Visible = false;
+		end
 	end);
-	if s then
-		writefile(configName, c);
-		return HttpService:JSONDecode(c);
+end
+local combat = Tabs.Main:AddLeftGroupbox("Hostile Targeting");
+combat:AddToggle("AutoTargetAnger", {Text="Lock on 💢 Signs",Default=true});
+combat:AddButton({Text="Manual Lock",Func=function()
+	manualTarget = getBestTarget();
+	if manualTarget then
+		Library:Notify("Locked: " .. manualTarget.Name);
+	end
+end});
+local vis = Tabs.Visuals:AddLeftGroupbox("ESP");
+vis:AddToggle("MasterESP", {Text="Enable",Default=false});
+vis:AddToggle("ESPTracers", {Text="Snaplines (0.5)",Default=false});
+for _, v in pairs(Players:GetPlayers()) do
+	if (v ~= player) then
+		createESP(v);
 	end
 end
-local currentSettings = (isfile(configName) and HttpService:JSONDecode(readfile(configName))) or fetchConfig();
-local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/";
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))();
-local Window = Library:CreateWindow({Title="Yoz ScriptService",Center=true,AutoShow=true,Resizable=true,MobileButtonsSide="Right"});
-local Tabs = {Main=Window:AddTab("Main", "user"),Combat=Window:AddTab("Combat", "crosshair"),Visuals=Window:AddTab("Visuals", "eye"),Settings=Window:AddTab("Settings", "settings")};
-local FloatGui = Instance.new("ScreenGui", CoreGui);
-local FloatBtn = Instance.new("TextButton", FloatGui);
-FloatBtn.Size = UDim2.new(0, 50, 0, 50);
+Players.PlayerAdded:Connect(createESP);                if vis then
+                    local mag = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(pos.X, pos.Y)).Magnitude
+                    if mag < dist and mag < Options.SilentAimFOV.Value then
+                        target = v
+                        dist = mag
+                    end
+                end
+            end
+        end
+    end
+    return target
+end
+
+-- // VISUALS: TRACER (0.5 THICKNESS)
+local function createESP(v)
+    local tracer = Drawing.new("Line")
+    tracer.Visible = false
+    tracer.Thickness = 0.5
+    
+    RunService.RenderStepped:Connect(function()
+        if v.Character and v.Character:FindFirstChild("HumanoidRootPart") and Toggles.MasterESP.Value then
+            local hrp = v.Character.HumanoidRootPart
+            local pos, vis = Camera:WorldToViewportPoint(hrp.Position)
+            
+            if vis then
+                -- Color logic: Red for 💢 targets, White for others
+                tracer.Color = isAngerTarget(v) and Color3.new(1,0,0) or Color3.new(1,1,1)
+                tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                tracer.To = Vector2.new(pos.X, pos.Y)
+                tracer.Visible = Toggles.ESPTracers.Value
+            else
+                tracer.Visible = false
+            end
+        else
+            tracer.Visible = false
+        end
+    end)
+end
+
+-- // UI INTEGRATION
+local combat = Tabs.Main:AddLeftGroupbox("Hostile Targeting")
+combat:AddToggle("AutoTargetAnger", {Text = "Lock on 💢 Signs", Default = true})
+combat:AddButton({Text = "Manual Lock", Func = function()
+    manualTarget = getBestTarget()
+    if manualTarget then Library:Notify("Locked: "..manualTarget.Name) end
+end})
+
+local vis = Tabs.Visuals:AddLeftGroupbox("ESP")
+vis:AddToggle("MasterESP", {Text = "Enable", Default = false})
+vis:AddToggle("ESPTracers", {Text = "Snaplines (0.5)", Default = false})
+
+-- // INIT
+for _, v in pairs(Players:GetPlayers()) do if v ~= player then createESP(v) end end
+Players.PlayerAdded:Connect(createESP)FloatBtn.Size = UDim2.new(0, 50, 0, 50);
 FloatBtn.Position = UDim2.new(0, 20, 0.5, -25);
 FloatBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30);
 FloatBtn.Text = "YOZ";
