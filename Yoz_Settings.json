@@ -1,8 +1,14 @@
 {
-  "HitboxExpander": false,
-  "AutoArrest": false,
-  "ShowTargetESP": true,
   "UIScale": 1.0,
+  "AutoArrest": false,
+  "HitboxExpander": false,
   "HitboxSize": 15,
-  "TargetColor": [255, 0, 0]
+  "ShowTargetESP": true,
+  "SilentAim": true,
+  "ShowFOV": true,
+  "SilentAimFOV": 100,
+  "AutoTargetAnger": true,
+  "MasterESP": true,
+  "ESPBoxes": true,
+  "ESPTracers": true
 }
